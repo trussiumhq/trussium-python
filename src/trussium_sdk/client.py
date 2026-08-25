@@ -55,6 +55,81 @@ class TrussiumClient:
         """Return public configured-capability metadata."""
         return self._request("GET", "/v1/capabilities")
 
+    def embeddings(self, payload: Mapping[str, Any]) -> dict[str, Any]:
+        """Create embeddings through the configured runtime."""
+        return self._request("POST", "/v1/embeddings", payload)
+
+    def moderations(self, payload: Mapping[str, Any]) -> dict[str, Any]:
+        """Classify input with the moderation capability."""
+        return self._request("POST", "/v1/moderations", payload)
+
+    def generate_image(self, payload: Mapping[str, Any]) -> dict[str, Any]:
+        """Create an image-generation request."""
+        return self._request("POST", "/v1/images/generations", payload)
+
+    def rerank(self, payload: Mapping[str, Any]) -> dict[str, Any]:
+        """Rerank documents through the configured runtime."""
+        return self._request("POST", "/v1/rerankings", payload)
+
+    def create_batch(self, payload: Mapping[str, Any]) -> dict[str, Any]:
+        """Create a provider-owned batch job."""
+        return self._request("POST", "/v1/batches", payload)
+
+    def get_batch(self, batch_id: str) -> dict[str, Any]:
+        """Read provider-owned batch-job metadata."""
+        return self._request("GET", f"/v1/batches/{batch_id}")
+
+    def cancel_batch(self, batch_id: str) -> dict[str, Any]:
+        """Request cancellation for a provider-owned batch job."""
+        return self._request("POST", f"/v1/batches/{batch_id}/cancel")
+
+    def create_video(self, payload: Mapping[str, Any]) -> dict[str, Any]:
+        """Create a video job and return metadata only."""
+        return self._request("POST", "/v1/videos", payload)
+
+    def get_video(self, video_id: str) -> dict[str, Any]:
+        """Read video-job metadata."""
+        return self._request("GET", f"/v1/videos/{video_id}")
+
+    def execute_tool(self, payload: Mapping[str, Any]) -> dict[str, Any]:
+        """Invoke one application-declared allowlisted runtime tool."""
+        return self._request("POST", "/v1/tools/executions", payload)
+
+    def transcribe(
+        self,
+        *,
+        model: str,
+        filename: str,
+        audio: bytes,
+        content_type: str = "application/octet-stream",
+        language: str | None = None,
+        prompt: str | None = None,
+        temperature: float | None = None,
+    ) -> dict[str, Any]:
+        """Send audio bytes only to the configured runtime for transcription."""
+        data: dict[str, str] = {"model": model}
+        for key, value in (
+            ("language", language),
+            ("prompt", prompt),
+            ("temperature", temperature),
+        ):
+            if value is not None:
+                data[key] = str(value)
+        try:
+            response = self._client.post(
+                "/v1/audio/transcriptions",
+                data=data,
+                files={"file": (filename, audio, content_type)},
+            )
+        except httpx.HTTPError as error:
+            raise RuntimeError("Trussium runtime request failed.") from error
+        if response.is_error:
+            raise APIError(response.status_code, _error_code(response))
+        payload = response.json()
+        if not isinstance(payload, dict):
+            raise TypeError("Trussium runtime returned an invalid response.")
+        return payload
+
     def _request(
         self,
         method: str,
