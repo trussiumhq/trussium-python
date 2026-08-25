@@ -28,6 +28,22 @@ It forwards a supplied request ID as `X-Request-ID` and returns `APIError` for
 non-success runtime responses. It never installs the runtime or broadens tool
 authority.
 
+## Runnable self-hosted example
+
+With a Trussium runtime running on port 9000, run the example from a source
+checkout:
+
+```bash
+TRUSSIUM_URL=http://127.0.0.1:9000 \
+TRUSSIUM_MODEL=llama3.1:8b \
+TRUSSIUM_PROMPT="Say hello." \
+uv run python examples/basic.py
+```
+
+The environment variables are optional. The example checks readiness and
+capabilities before making one completion request. It calls an existing local,
+private, or public runtime; it does not install or host Trussium.
+
 ## Development
 
 ```bash
