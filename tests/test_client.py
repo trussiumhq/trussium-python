@@ -52,6 +52,7 @@ def test_additional_operations_use_stable_runtime_paths() -> None:
         client.moderations(payload)
         client.generate_image(payload)
         client.rerank(payload)
+        client.translate(payload, request_id="translation-123")
         client.create_batch(payload)
         client.get_batch("batch-1")
         client.cancel_batch("batch-1")
@@ -65,6 +66,7 @@ def test_additional_operations_use_stable_runtime_paths() -> None:
         "/v1/moderations",
         "/v1/images/generations",
         "/v1/rerankings",
+        "/v1/translations",
         "/v1/batches",
         "/v1/batches/batch-1",
         "/v1/batches/batch-1/cancel",
