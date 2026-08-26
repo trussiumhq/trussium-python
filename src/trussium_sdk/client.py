@@ -71,6 +71,12 @@ class TrussiumClient:
         """Rerank documents through the configured runtime."""
         return self._request("POST", "/v1/rerankings", payload)
 
+    def translate(
+        self, payload: Mapping[str, Any], *, request_id: str | None = None
+    ) -> dict[str, Any]:
+        """Translate text through the configured runtime."""
+        return self._request("POST", "/v1/translations", payload, request_id)
+
     def create_batch(self, payload: Mapping[str, Any]) -> dict[str, Any]:
         """Create a provider-owned batch job."""
         return self._request("POST", "/v1/batches", payload)

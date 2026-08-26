@@ -23,7 +23,8 @@ with TrussiumClient("http://127.0.0.1:9000") as client:
 
 The client supports non-streaming chat completions, readiness, public
 capability discovery, embeddings, moderation, image generation, transcription,
-reranking, batch jobs, video jobs, and controlled application-declared tools.
+reranking, translation, batch jobs, video jobs, and controlled
+application-declared tools.
 It forwards a supplied request ID as `X-Request-ID` and returns `APIError` for
 non-success runtime responses. It never installs the runtime or broadens tool
 authority.
