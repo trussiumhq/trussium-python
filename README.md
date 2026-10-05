@@ -54,3 +54,7 @@ uv run ruff format --check .
 uv run mypy src tests
 uv run pytest
 ```
+
+GitHub Actions runs these checks on pushes and pull requests. A weekly
+security workflow audits the committed `uv.lock` dependency versions, and
+CodeQL scans the Python source on pull requests and on a weekly schedule.
