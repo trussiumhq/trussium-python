@@ -1,9 +1,11 @@
 """HTTP client for a configured Trussium runtime."""
 
 from collections.abc import Mapping
-from typing import Any, Self
+from typing import Any, Self, cast
 
 import httpx
+
+from trussium_sdk.workflows import WorkflowRequest, WorkflowResult
 
 
 class APIError(RuntimeError):
@@ -101,6 +103,22 @@ class TrussiumClient:
         """Invoke one application-declared allowlisted runtime tool."""
         return self._request("POST", "/v1/tools/executions", payload)
 
+    def execute_workflow(
+        self,
+        payload: WorkflowRequest,
+        *,
+        request_id: str | None = None,
+    ) -> WorkflowResult:
+        """Execute a declared workflow using tools registered by the runtime application.
+
+        This request method does not register or discover tools. The runtime
+        must be composed with the requested tools before the workflow runs.
+        """
+        response = self._request(
+            "POST", "/v1/workflows/executions", cast(Mapping[str, Any], payload), request_id
+        )
+        return _validate_workflow_result(response)
+
     def transcribe(
         self,
         *,
@@ -162,7 +180,27 @@ def _error_code(response: httpx.Response) -> str | None:
         payload = response.json()
     except ValueError:
         return None
-    if not isinstance(payload, dict) or not isinstance(payload.get("error"), dict):
+    if not isinstance(payload, dict):
         return None
-    code = payload["error"].get("code")
+    error = payload.get("error")
+    if not isinstance(error, dict):
+        error = payload.get("detail")
+    if not isinstance(error, dict):
+        return None
+    code = error.get("code")
     return code if isinstance(code, str) else None
+
+
+def _validate_workflow_result(payload: dict[str, Any]) -> WorkflowResult:
+    status = payload.get("status")
+    steps = payload.get("steps")
+    if status not in {"completed", "cancelled", "timed_out"} or not isinstance(steps, list):
+        raise TypeError("Trussium runtime returned an invalid workflow response.")
+    for step in steps:
+        if (
+            not isinstance(step, dict)
+            or not isinstance(step.get("tool_name"), str)
+            or not isinstance(step.get("output"), dict)
+        ):
+            raise TypeError("Trussium runtime returned an invalid workflow response.")
+    return cast(WorkflowResult, payload)
