@@ -29,6 +29,36 @@ It forwards a supplied request ID as `X-Request-ID` and returns `APIError` for
 non-success runtime responses. It never installs the runtime or broadens tool
 authority.
 
+## Bounded workflows
+
+The SDK provides typed request and result contracts for the runtime's bounded
+workflow endpoint:
+
+```python
+from trussium_sdk import TrussiumClient, WorkflowRequest
+
+workflow: WorkflowRequest = {
+    "steps": [
+        {
+            "id": "search",
+            "invocation": {
+                "name": "knowledge.search",
+                "arguments": {"query": "How is the runtime configured?"},
+            },
+        }
+    ],
+    "deadline_seconds": 20,
+}
+
+with TrussiumClient("http://127.0.0.1:9000") as client:
+    result = client.execute_workflow(workflow, request_id="audit-123")
+```
+
+This method calls `POST /v1/workflows/executions`; it does not install,
+register, or discover tools. The runtime application must explicitly register
+the requested tool and its argument schema. Workflow and tool admission limits,
+authorization, deadlines, and cancellation are enforced by the runtime.
+
 ## Runnable self-hosted example
 
 With a Trussium runtime running on port 9000, run the example from a source

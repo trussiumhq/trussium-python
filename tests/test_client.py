@@ -1,7 +1,7 @@
 import httpx
 import pytest
 
-from trussium_sdk import APIError, TrussiumClient
+from trussium_sdk import APIError, TrussiumClient, WorkflowRequest
 
 
 def test_complete_forwards_request_id() -> None:
@@ -75,3 +75,74 @@ def test_additional_operations_use_stable_runtime_paths() -> None:
         "/v1/tools/executions",
         "/v1/audio/transcriptions",
     ]
+
+
+def test_execute_workflow_sends_typed_request_and_request_id() -> None:
+    expected: WorkflowRequest = {
+        "steps": [
+            {
+                "id": "search",
+                "invocation": {
+                    "name": "knowledge.search",
+                    "arguments": {"query": "runtime"},
+                },
+            }
+        ],
+        "deadline_seconds": 20,
+    }
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/v1/workflows/executions"
+        assert request.headers["X-Request-ID"] == "workflow-request-1"
+        assert request.read() == httpx.Request("POST", "http://runtime.test", json=expected).read()
+        return httpx.Response(
+            200,
+            json={
+                "status": "completed",
+                "steps": [{"tool_name": "knowledge.search", "output": {"matches": 1}}],
+            },
+        )
+
+    with TrussiumClient(
+        http_client=httpx.Client(
+            base_url="http://runtime.test", transport=httpx.MockTransport(handler)
+        )
+    ) as client:
+        result = client.execute_workflow(expected, request_id="workflow-request-1")
+
+    assert result["status"] == "completed"
+    assert result["steps"][0]["output"] == {"matches": 1}
+
+
+def test_execute_workflow_preserves_runtime_error_code() -> None:
+    def handler(_: httpx.Request) -> httpx.Response:
+        return httpx.Response(503, json={"detail": {"code": "workflows_unavailable"}})
+
+    with (
+        TrussiumClient(
+            http_client=httpx.Client(
+                base_url="http://runtime.test", transport=httpx.MockTransport(handler)
+            )
+        ) as client,
+        pytest.raises(APIError, match="workflows_unavailable") as raised,
+    ):
+        client.execute_workflow({"steps": []})
+
+    assert raised.value.code == "workflows_unavailable"
+
+
+def test_execute_workflow_rejects_malformed_success_response() -> None:
+    def handler(_: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"status": "completed", "steps": [{"output": []}]})
+
+    with (
+        TrussiumClient(
+            http_client=httpx.Client(
+                base_url="http://runtime.test", transport=httpx.MockTransport(handler)
+            )
+        ) as client,
+        pytest.raises(TypeError, match="invalid workflow response"),
+    ):
+        client.execute_workflow(
+            {"steps": [{"id": "search", "invocation": {"name": "docs.search", "arguments": {}}}]}
+        )
