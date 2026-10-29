@@ -88,3 +88,11 @@ uv run pytest
 GitHub Actions runs these checks on pushes and pull requests. A weekly
 security workflow audits the committed `uv.lock` dependency versions, and
 CodeQL scans the Python source on pull requests and on a weekly schedule.
+
+## Releases
+
+Conventional Commits on `main` drive semantic versioning. Successful release
+runs create a version commit, `v<version>` Git tag, GitHub Release, and attach
+the built wheel and source archive. PyPI publishing is intentionally disabled;
+the SDK can be installed from a GitHub release asset or source checkout until
+a separate package-registry release is configured.
