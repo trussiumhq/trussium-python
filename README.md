@@ -5,8 +5,11 @@ or host the runtime, Kubernetes, Helm, or `trussium-operator`.
 
 ## Install
 
+Download the wheel asset from the desired [GitHub Release](https://github.com/trussiumhq/trussium-python/releases),
+then install it with pip. The release version appears in the wheel filename:
+
 ```bash
-pip install trussium-sdk
+python -m pip install ./trussium_sdk-<version>-py3-none-any.whl
 ```
 
 ## Usage
