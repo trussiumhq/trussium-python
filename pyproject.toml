@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "trussium-sdk"
-version = "0.1.0"
+version = "0.3.0"
 description = "Official Python SDK for an existing Trussium runtime."
 readme = "README.md"
 requires-python = ">=3.12"
